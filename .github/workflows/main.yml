@@ -1,0 +1,25 @@
+name: Commit Message Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Check commit message
+        run: |
+          # Get the commit message from the PR
+          COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.sha }})
+
+          # Check if the commit message starts with "bug"
+          if ! echo "$COMMIT_MSG" | grep -qE '^bug'; then
+            echo "Error: Commit message must start with 'bug'."
+            exit 1
+          fi
