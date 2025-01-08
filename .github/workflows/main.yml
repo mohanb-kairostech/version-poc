@@ -1,30 +1,32 @@
-name: Merge Commit Message Check
+name: Merge Commit Message Validation
 
 on:
   pull_request:
     types:
-      - closed
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
-  check-merge-commit-message:
+  validate-merge-message:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Check merge commit message
+      - name: Get PR merge commit message
         run: |
-          # Ensure the pull request is merged and not just closed
+          # Ensure that the pull request is being merged
           if [[ "${{ github.event.pull_request.merged }}" == "false" ]]; then
-            echo "PR not merged, skipping commit message check."
+            echo "PR is not merged yet, skipping validation."
             exit 0
           fi
 
-          # Get the merge commit message (the commit that merges the PR into main)
+          # Get the merge commit message
           MERGE_COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.event.pull_request.merge_commit_sha }})
 
-          # Check if the merge commit message starts with "bug", "feature", or "new"
+          # Check if the merge commit message starts with "bug"
           if ! echo "$MERGE_COMMIT_MSG" | grep -qE '^(bug|feature|new)'; then
             echo "Error: Merge commit message must start with 'bug', 'feature', or 'new'."
             exit 1
