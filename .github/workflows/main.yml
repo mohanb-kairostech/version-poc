@@ -1,25 +1,31 @@
-name: Commit Message Check
+name: Merge Commit Message Check
 
 on:
   pull_request:
-    branches:
-      - main
+    types:
+      - closed
 
 jobs:
-  check-commit-message:
+  check-merge-commit-message:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Check commit message
+      - name: Check merge commit message
         run: |
-          # Get the commit message from the PR
-          COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.sha }})
+          # Ensure the pull request is merged and not just closed
+          if [[ "${{ github.event.pull_request.merged }}" == "false" ]]; then
+            echo "PR not merged, skipping commit message check."
+            exit 0
+          fi
 
-          # Check if the commit message starts with "bug"
-          if ! echo "$COMMIT_MSG" | grep -qE '^bug'; then
-            echo "Error: Commit message must start with 'bug'."
+          # Get the merge commit message (the commit that merges the PR into main)
+          MERGE_COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.event.pull_request.merge_commit_sha }})
+
+          # Check if the merge commit message starts with "bug", "feature", or "new"
+          if ! echo "$MERGE_COMMIT_MSG" | grep -qE '^(bug|feature|new)'; then
+            echo "Error: Merge commit message must start with 'bug', 'feature', or 'new'."
             exit 1
           fi
