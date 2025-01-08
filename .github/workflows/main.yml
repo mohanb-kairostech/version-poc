@@ -3,9 +3,7 @@ name: Merge Commit Message Validation
 on:
   pull_request:
     types:
-      - opened
-      - synchronize
-      - reopened
+      - closed
 
 jobs:
   validate-merge-message:
@@ -15,18 +13,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get PR merge commit message
+      - name: Ensure PR is merged and not just closed
         run: |
-          # Ensure that the pull request is being merged
-          if [[ "${{ github.event.pull_request.merged }}" == "false" ]]; then
-            echo "PR is not merged yet, skipping validation."
+          if [[ "${{ github.event.pull_request.merged }}" != "true" ]]; then
+            echo "PR was not merged, skipping validation."
             exit 0
           fi
 
-          # Get the merge commit message
+      - name: Get Merge Commit Message
+        run: |
           MERGE_COMMIT_MSG=$(git log --format=%B -n 1 ${{ github.event.pull_request.merge_commit_sha }})
+          echo "Merge commit message: $MERGE_COM_MSG"
 
-          # Check if the merge commit message starts with "bug"
+          # Check if the merge commit message starts with "bug", "feature", or "new"
           if ! echo "$MERGE_COMMIT_MSG" | grep -qE '^(bug|feature|new)'; then
             echo "Error: Merge commit message must start with 'bug', 'feature', or 'new'."
             exit 1
